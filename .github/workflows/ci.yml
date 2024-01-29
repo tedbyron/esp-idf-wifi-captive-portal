@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    paths-ignore:
+      - '**/README.md'
+  pull_request:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  rust-checks:
+    name: Compile
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        action:
+          - command: fmt
+            args: --all -- --check --color always
+          - command: clippy
+            args: --all-targets --all-features --workspace -- -D warnings
+          - command: build
+            args: --release
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Enable caching
+        uses: Swatinem/rust-cache@v2
+      - name: Setup | ldproxy (binary)
+        id: ldproxy-binary
+        continue-on-error: true
+        run: |
+          sudo curl -L "https://github.com/esp-rs/embuild/releases/latest/download/ldproxy-x86_64-unknown-linux-gnu.zip" -o "/home/runner/.cargo/bin/ldproxy.zip"
+          unzip "/home/runner/.cargo/bin/ldproxy.zip" -d "/home/runner/.cargo/bin/"
+          chmod u+x /home/runner/.cargo/bin/ldproxy
+      - name: Setup | ldproxy (cargo)
+        if: steps.ldproxy-binary.outcome != 'success'
+        run: cargo install ldproxy
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: nightly
+          components: rust-src, rustfmt, clippy
+      - name: Run command
+        run: cargo ${{ matrix.action.command }} ${{ matrix.action.args }}
