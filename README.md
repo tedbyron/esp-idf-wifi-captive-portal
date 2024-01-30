@@ -1,4 +1,4 @@
-# esp-idf-captive-portal
+# esp-idf-wifi-captive-portal
 
 Example ESP-IDF captive portal for setting up STA WiFi
 
@@ -14,3 +14,6 @@ Example ESP-IDF captive portal for setting up STA WiFi
   ```sh
   cargo r --release
   ```
+
+Uses websockets to communicate from the browser to the ESP device (`CONFIG_HTTPD_WS_SUPPORT=y` in
+sdkconfig.defaults) and the crate `edge-captive` for the DNS captive portal.
